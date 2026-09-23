@@ -1,0 +1,53 @@
+# Изгражда приложението за Android / Huawei (APK файл).
+# При промяна в main файлът се публикува в Releases → „android“, откъдето се сваля на телефона.
+name: Android приложение
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Подготовка
+        run: |
+          npm ci
+          npm run build
+          npx cap sync android
+      - name: Изграждане на APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Проверка на подписа
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk apteka.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs apteka.apk | head -3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apteka-android
+          path: apteka.apk
+      - name: Публикуване (само от main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view android >/dev/null 2>&1 || gh release create android --target main \
+            --title "Аптечка за Android / Huawei" \
+            --notes "Отворете тази страница от телефона и натиснете apteka.apk, за да свалите и инсталирате приложението."
+          gh release upload android apteka.apk --clobber

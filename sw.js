@@ -1,7 +1,7 @@
 // Кешира файловете на приложението, за да работи и без интернет.
-const CACHE = 'apteka-v1';
+const CACHE = 'apteka-v2';
 const FILES = [
-  './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
+  './', 'index.html', 'styles.css', 'app.js', 'config.js', 'vendor/supabase.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

@@ -1,9 +1,8 @@
-# Публикува приложението в GitHub Pages при всяка промяна в main.
+# Публикува уеб версията (за iPhone/iPad без App Store) в GitHub Pages.
+# Пуска се ръчно: Actions → „Публикуване“ → Run workflow.
 name: Публикуване
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -23,11 +22,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
       - name: Подготовка на файловете
         run: |
-          mkdir _site
-          cp -r index.html styles.css app.js sw.js manifest.webmanifest icons _site/
+          npm ci
+          npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
       - id: deployment
         uses: actions/deploy-pages@v4
