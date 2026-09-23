@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Домашна аптечка</title>
+  <meta name="description" content="Списък на домашните лекарства със срок на годност">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Аптечка">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <h1>💊 Домашна аптечка</h1>
+      <button id="btn-settings" class="icon-btn" aria-label="Настройки">⚙️</button>
+    </div>
+    <input id="search" type="search" placeholder="Търси по име или описание…" autocomplete="off" aria-label="Търсене">
+    <div class="filters" role="group" aria-label="Филтър по срок">
+      <button class="chip active" data-filter="all">Всички <span data-count="all"></span></button>
+      <button class="chip chip-soon" data-filter="soon">⚠️ Изтичат скоро <span data-count="soon"></span></button>
+      <button class="chip chip-expired" data-filter="expired">⛔ Изтекли <span data-count="expired"></span></button>
+      <button class="chip chip-ok" data-filter="ok">✅ Валидни <span data-count="ok"></span></button>
+    </div>
+  </header>
+
+  <main id="list" aria-live="polite"></main>
+
+  <button id="btn-add" class="fab" aria-label="Добави лекарство">＋</button>
+
+  <!-- Добавяне / редакция -->
+  <dialog id="dlg-edit">
+    <form id="form-edit" method="dialog">
+      <h2 id="edit-title">Ново лекарство</h2>
+
+      <div class="photo-box">
+        <img id="photo-preview" alt="" hidden>
+        <div id="photo-empty" class="photo-empty">Няма снимка</div>
+      </div>
+      <div class="photo-actions">
+        <label class="btn">📷 Снимай
+          <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
+        </label>
+        <label class="btn">🖼️ От галерията
+          <input id="photo-gallery" type="file" accept="image/*" hidden>
+        </label>
+        <button type="button" id="photo-remove" class="btn btn-ghost" hidden>Махни снимката</button>
+      </div>
+
+      <label class="field">Име на лекарството *
+        <input id="f-name" required maxlength="120" autocomplete="off">
+      </label>
+      <label class="field">Описание (за какво е, дозировка…)
+        <textarea id="f-desc" rows="3" maxlength="2000"></textarea>
+      </label>
+      <label class="field">Срок на годност *
+        <input id="f-expiry" type="date" required>
+      </label>
+      <label class="field">Добавено от
+        <input id="f-by" maxlength="60" autocomplete="off" placeholder="напр. Мама">
+      </label>
+
+      <div class="dlg-actions">
+        <button type="button" id="btn-delete" class="btn btn-danger" hidden>🗑️ Изтрий</button>
+        <span class="spacer"></span>
+        <button type="button" id="btn-cancel" class="btn btn-ghost">Отказ</button>
+        <button type="submit" class="btn btn-primary">Запази</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Потвърждение за изтриване -->
+  <dialog id="dlg-confirm">
+    <form method="dialog">
+      <h2>Изтриване</h2>
+      <p id="confirm-text"></p>
+      <div class="dlg-actions">
+        <span class="spacer"></span>
+        <button value="no" class="btn btn-ghost">Не</button>
+        <button value="yes" class="btn btn-danger">Да, изтрий</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Настройки -->
+  <dialog id="dlg-settings">
+    <form method="dialog">
+      <h2>Настройки</h2>
+      <label class="field">Предупреждавай, когато до изтичане остават (дни)
+        <input id="s-days" type="number" min="1" max="365" inputmode="numeric">
+      </label>
+
+      <h3>Резервно копие / прехвърляне</h3>
+      <p class="hint">Данните се пазят само на това устройство. За да ги прехвърлите
+        на друг телефон или таблет, запазете файл тук и го отворете с „Зареди“ на другото устройство.</p>
+      <div class="photo-actions">
+        <button type="button" id="btn-export" class="btn">💾 Запази файл</button>
+        <label class="btn">📂 Зареди файл
+          <input id="import-file" type="file" accept=".json,application/json" hidden>
+        </label>
+      </div>
+
+      <div class="dlg-actions">
+        <span class="spacer"></span>
+        <button value="close" class="btn btn-primary">Готово</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
