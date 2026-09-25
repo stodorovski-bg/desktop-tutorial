@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Домашна аптечка</title>
+  <meta name="description" content="Общ семеен списък на домашните лекарства със срок на годност">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Аптечка">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Зареждане -->
+  <section id="screen-loading" class="screen center">
+    <div class="big">💊</div>
+    <p>Зареждане…</p>
+  </section>
+
+  <!-- Липсва връзка с базата (не е настроено) -->
+  <section id="screen-setup" class="screen center" hidden>
+    <div class="big">🔧</div>
+    <h2>Приложението още не е свързано</h2>
+    <p class="hint">Попълнете адреса и ключа на Supabase във файла <code>config.js</code> (вижте README).</p>
+  </section>
+
+  <!-- Вход / регистрация -->
+  <section id="screen-auth" class="screen" hidden>
+    <div class="panel">
+      <div class="brand"><div class="big">💊</div><h1>Домашна аптечка</h1>
+        <p class="hint">Общ списък с лекарствата за цялото семейство</p></div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-auth-tab="login">Вход</button>
+        <button type="button" class="tab" data-auth-tab="signup">Нов профил</button>
+      </div>
+      <form id="form-auth">
+        <label class="field" id="auth-name-field" hidden>Вашето име (виждат го другите)
+          <input id="auth-name" maxlength="60" autocomplete="name" placeholder="напр. Мама">
+        </label>
+        <label class="field">Имейл
+          <input id="auth-email" type="email" required autocomplete="email" inputmode="email" autocapitalize="off">
+        </label>
+        <label class="field">Парола
+          <input id="auth-password" type="password" required minlength="6" autocomplete="current-password">
+        </label>
+        <p id="auth-msg" class="msg" hidden></p>
+        <button id="auth-submit" type="submit" class="btn btn-primary btn-block">Вход</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Създаване / присъединяване към семейство -->
+  <section id="screen-family" class="screen" hidden>
+    <div class="panel">
+      <h2>Добре дошли! 👋</h2>
+      <p class="hint">Лекарствата се споделят в рамките на едно „семейство“. Един човек го създава,
+        а останалите се присъединяват с кода, който той им даде.</p>
+      <label class="field">Вашето име (виждат го другите)
+        <input id="fam-display" maxlength="60" autocomplete="name" placeholder="напр. Мама">
+      </label>
+
+      <h3>Имам код от член на семейството</h3>
+      <form id="form-join" class="row">
+        <input id="fam-code" class="code-input" maxlength="8" placeholder="КОД" autocapitalize="characters" autocomplete="off" aria-label="Код за покана">
+        <button type="submit" class="btn btn-primary">Присъедини се</button>
+      </form>
+
+      <h3>Аз съм първият</h3>
+      <form id="form-create" class="row">
+        <input id="fam-name" maxlength="80" placeholder="Име на семейството, напр. Тодорови" aria-label="Име на семейството">
+        <button type="submit" class="btn">Създай</button>
+      </form>
+
+      <p id="fam-msg" class="msg" hidden></p>
+      <button type="button" class="btn btn-ghost btn-block js-logout">Изход от профила</button>
+    </div>
+  </section>
+
+  <!-- Основен списък -->
+  <section id="screen-main" hidden>
+    <header class="top">
+      <div class="top-row">
+        <h1>💊 <span id="family-title">Домашна аптечка</span></h1>
+        <button id="btn-settings" class="icon-btn" aria-label="Настройки">⚙️</button>
+      </div>
+      <input id="search" type="search" placeholder="Търси по име или описание…" autocomplete="off" aria-label="Търсене">
+      <div class="filters" role="group" aria-label="Филтър по срок">
+        <button class="chip active" data-filter="all">Всички <span data-count="all"></span></button>
+        <button class="chip" data-filter="soon">⚠️ Изтичат скоро <span data-count="soon"></span></button>
+        <button class="chip" data-filter="expired">⛔ Изтекли <span data-count="expired"></span></button>
+        <button class="chip" data-filter="ok">✅ Валидни <span data-count="ok"></span></button>
+      </div>
+      <div id="offline-banner" class="banner" hidden>Няма връзка с интернет – показва се последният запазен списък.</div>
+    </header>
+
+    <main id="list" aria-live="polite"></main>
+
+    <button id="btn-add" class="fab" aria-label="Добави лекарство">＋</button>
+  </section>
+
+  <!-- Добавяне / редакция -->
+  <dialog id="dlg-edit">
+    <form id="form-edit" method="dialog">
+      <h2 id="edit-title">Ново лекарство</h2>
+
+      <div class="photo-box">
+        <img id="photo-preview" alt="" hidden>
+        <div id="photo-empty" class="photo-empty">Няма снимка</div>
+      </div>
+      <div class="photo-actions">
+        <label class="btn">📷 Снимай
+          <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
+        </label>
+        <label class="btn">🖼️ От галерията
+          <input id="photo-gallery" type="file" accept="image/*" hidden>
+        </label>
+        <button type="button" id="photo-remove" class="btn btn-ghost" hidden>Махни снимката</button>
+      </div>
+
+      <label class="field">Име на лекарството *
+        <input id="f-name" required maxlength="120" autocomplete="off">
+      </label>
+      <label class="field">Описание (за какво е, дозировка…)
+        <textarea id="f-desc" rows="3" maxlength="2000"></textarea>
+      </label>
+      <label class="field">Срок на годност *
+        <input id="f-expiry" type="date" required>
+      </label>
+      <p id="edit-meta" class="hint"></p>
+
+      <div class="dlg-actions">
+        <button type="button" id="btn-delete" class="btn btn-danger" hidden>🗑️ Изтрий</button>
+        <span class="spacer"></span>
+        <button type="button" id="btn-cancel" class="btn btn-ghost">Отказ</button>
+        <button type="submit" id="btn-save" class="btn btn-primary">Запази</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Потвърждение -->
+  <dialog id="dlg-confirm">
+    <form method="dialog">
+      <h2 id="confirm-title">Потвърждение</h2>
+      <p id="confirm-text"></p>
+      <div class="dlg-actions">
+        <span class="spacer"></span>
+        <button value="no" class="btn btn-ghost">Не</button>
+        <button value="yes" id="confirm-yes" class="btn btn-danger">Да</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Настройки -->
+  <dialog id="dlg-settings">
+    <form method="dialog">
+      <h2>Настройки</h2>
+
+      <h3>Семейство „<span id="s-family"></span>“</h3>
+      <p class="hint">Дайте този код на членовете на семейството, за да се присъединят:</p>
+      <div class="row">
+        <div id="s-code" class="code-box"></div>
+        <button type="button" id="btn-share-code" class="btn">📤 Изпрати</button>
+      </div>
+      <p class="hint">Членове: <span id="s-members"></span></p>
+
+      <label class="field">Вашето име
+        <input id="s-name" maxlength="60">
+      </label>
+      <label class="field">Предупреждавай, когато до изтичане остават (дни)
+        <input id="s-days" type="number" min="1" max="365" inputmode="numeric">
+      </label>
+
+      <div class="dlg-actions">
+        <button type="button" class="btn btn-ghost js-logout">Изход от профила</button>
+        <button type="button" id="btn-leave" class="btn btn-ghost">Напусни семейството</button>
+        <span class="spacer"></span>
+        <button value="close" class="btn btn-primary">Готово</button>
+      </div>
+      <p class="hint" id="s-account"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

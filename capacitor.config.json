@@ -1,0 +1,8 @@
+{
+  "appId": "com.stodorovski.apteka",
+  "appName": "Аптечка",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
